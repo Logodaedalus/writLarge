@@ -6,7 +6,7 @@
   var cy;
   $("#outro").fadeOut("slow", function() {
     generate();
-    window.setTimeout(outro, 45000);
+    //window.setTimeout(outro, 45000);
   });
   
 //-------------------------------------------------------------------------------------------------
@@ -138,6 +138,7 @@ function formatMarkovData(markovData) {
 
 
     var addNode = function(id, text, nodeClass) {
+      console.log("added node with id: ", id);
         graphData.nodes.push({
             group: "nodes",
             classes: nodeClass,
@@ -161,37 +162,43 @@ function formatMarkovData(markovData) {
         graphData.edges.push(edgeObj);
     };
 /*
-NEW STUFF
+//NEW STUFF
     var genId = function(theNode) {
-      //idStepper++;
       var theIds = "_";
-      for (var aChild in theNode.children) {
-        theIds += aChild.replace(/([^a-z0-9]+)/gi, '-');    //get rid of illegal characters
-      }
+      for (var aChild in theNode.children) { theIds += aChild; }
+      theIds = theIds.replace(/\./g, "-q");
+      theIds = theIds.replace(/\,/g, "-v");
+      theIds = theIds.replace(/\'/g, "_s");
+      theIds = theIds.replace(/\"/g, "-a");
+      theIds = theIds.replace(/\(/g, "_f");
+      theIds = theIds.replace(/\)/g, "_w");
+
       return theNode.token + theIds;
     };
 
     var recurse = function(theParent){
         
-        for (var theChild in theParent.children) {
+        for (var theChild in theParent.children) {      //for each child of the parent...
             var childIds = "";
             var id = genId(theParent.children[theChild]);
-            addNode(id, theChild);            //add node to graph
-            addEdge(genId(theParent), id);
-            for (var recurseChild in theParent.children[theChild].children) {
-              recurse(theParent.children[theChild].children[recurseChild]);
+            addNode(id, theChild);                      //add node to graph
+            addEdge(genId(theParent), id);              //add node from child to parent
+            for (var recurseChild in theParent.children[theChild].children) {     //for each child of the child...
+              recurse(theParent.children[theChild].children[recurseChild]);       //run the function
             }
         }
     }
 
     var graphData = {nodes: [], edges: [] };
-    addNode(genId(markovData), markovData.token);       //add root note
+    addNode( genId(markovData), markovData.token );       //add root note
     recurse(markovData);          //recurse and add all children
-    console.log(markovData);
 */
 
-
+    
     var stack = [], node, ii;
+    while (markovData.parent.token !== "ROOT") {
+      markovData = markovData.parent;
+    }
     stack.push(markovData);
     var graphData = {nodes: [], edges: [] };
 
@@ -205,7 +212,8 @@ NEW STUFF
         if (node.parent.token !== "ROOT") {
             var parentId;
             var edgeLabel = "";
-            for (var x=graphData.nodes.length-1; x >= 0; x--) {            //search graphData nodes backwards
+            for (var x=0; x < graphData.nodes.length; x++) {
+            //for (var x=graphData.nodes.length-1; x >= 0; x--;) {            //search graphData nodes backwards
                 var temp = graphData.nodes[x].data.id.split("_");
                 if (temp[1] == node.parent.token) {
                     parentId = graphData.nodes[x].data.id;
@@ -222,11 +230,20 @@ NEW STUFF
         }
     }
     
+    console.log("markovData", markovData);
+    console.log("graphData", graphData);
+
     return graphData;
 }
 //-------------------------------------------------------------------------------------------------
 function growTree() {
-  cy.fit();
+  trimTree();         //cut out egregious nodes
+  cy.layout({
+    name: 'dagre',
+    nodeSep: 20,
+    rankSep: 100
+  });
+  cy.fit(cy.nodes());
   var bfs = cy.elements().bfs('.root', function(){}, true);
 
   var i = 0;
@@ -241,6 +258,35 @@ function growTree() {
 
   // kick off first highlight
   highlightNextEle();
+}
+//-------------------------------------------------------------------------------------------------
+function trimTree() {
+
+  var outdegreeForTrim = 10;
+  var trimmed = false;
+
+  for (var x=0; x < cy.nodes().length; x++) {
+    if (cy.nodes()[x].outdegree() > outdegreeForTrim) {
+      trimmed = true;
+      var trimAmount = cy.nodes()[x].outdegree() - outdegreeForTrim;
+      var trimStart = true;
+      for (var y=0; y < trimAmount; y++) {
+        if (trimStart) {
+          if (typeof cy.nodes()[x].outgoers().nodes()[0 + y] == "undefined") { break; }
+            cy.nodes()[x].outgoers().nodes()[0 + y].remove();
+          trimStart = false;  
+        }
+        else {
+          if (typeof cy.nodes()[x].outgoers().nodes()[cy.nodes()[x].outgoers().nodes().length - y] == "undefined") { break; }
+          cy.nodes()[x].outgoers().nodes()[cy.nodes()[x].outgoers().nodes().length - y].remove();
+          trimStart = true;
+        }
+        
+      }
+      break;
+    }
+  }
+  if (trimmed) { trimTree(); }
 }
 //-------------------------------------------------------------------------------------------------
 function initCyto(graphData) {
@@ -306,18 +352,25 @@ function initCyto(graphData) {
           
           elements: graphData,
           
+          /*
           layout: {
             name: 'breadthfirst',
             directed: true,
             padding: 10,
             roots: '.root'
           }
+          */
+          layout: {
+            name: 'dagre',
+            nodeSep: 20,
+            rankSep: 100
+          }
         }); // cy init
 
         
 }
 //-------------------------------------------------------------------------------------------------
-
+/*
 function generateFromInput() {
     var theText = new RiString($("#txtInput").val());
     var posArray = RiTa.getPosTags(theText._text, true);
@@ -394,23 +447,13 @@ function generateWithMustHaves() {
     $('#generated').html(formattedText);
 }
 
-function cleanText(genText) {
-    
-
-return cleanedText;
-}
-
-function formatText(dirtyText) {
-    
-}
-
 $('#generate').on('click', function () {
     generateFromInput();
 });
 $('#generateFromCorpus').on('click', function () {
     generateWithMustHaves();
 });
-
+/*
 
 
 
