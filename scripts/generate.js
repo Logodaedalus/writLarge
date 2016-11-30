@@ -4,35 +4,53 @@
   //generator = new RiMarkov(3, true, false);
   //generator.loadFrom('scripts/data/tweets.txt');
   var cy;
-  generateTree();
+  generate();
 //-------------------------------------------------------------------------------------------------
-function generateTree() {
+function generate() {
 
     var baseCorpus = ["scripts/data/tweets.txt"];
     var additiveCorpora = [
-    "scripts/data/precariat.txt"
+    {file: "scripts/data/precariat.txt", andList: ["and a dream"], orList: ["precariat", "labour", "income", "class"]}
     ];
     var texts = "";
     var randomIndex = Math.floor(Math.random() * (additiveCorpora.length - 0) + 0);
 
     $.get(baseCorpus, function(response) {
         texts += response;
-        $.get(additiveCorpora[randomIndex], function(response2) {
+        $.get(additiveCorpora[randomIndex].file, function(response2) {
             texts += response2;
             generator = createMarkovGenerator(texts);        //create Markov thing from corpus data
-            var sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+            var sentenceCorrect = false;
+            var sentenceData;
+            while(!sentenceCorrect) { 
+              sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+              //sentenceCorrect = checkSentence(sentenceData.sentence[0], additiveCorpora[randomIndex].andList, additiveCorpora[randomIndex].orList);
+              sentenceCorrect = true;
+            }
             var graphData = formatMarkovData(sentenceData.cytoGraphData);
             initCyto(graphData);        //pass data to initCyto()
-            $("#sentence").html("<p>" + sentenceData.sentence + "</p>");
+            displaySentence(sentenceData.sentence[0]);
+            displayUnderground(generator, additiveCorpora[randomIndex].andList, additiveCorpora[randomIndex].orList);
             growTree();   
-             //TODO: animate the tree / sentence
-                //on callback when finished, wait some period of time
-                //create oldTree div / destroy oldest oldTree div if performance bad
-                //copy HTML to oldTree div (in same position as currentTree div, then animate it moving away?)
-                    //callback for moving away, call generateTree with new corpus
+            
         });
     });
 
+}
+//-------------------------------------------------------------------------------------------------
+function checkSentence(sentenceData, andList, orList) {
+  //return sentence.indexOf("and a dream") > -1 && (sentence.indexOf("precariat") > -1 || sentence.indexOf("labour") > -1 || sentence.indexOf("income") > -1 || sentence.indexOf("class") > -1)
+    var correct = true;
+    var sentence = sentenceData.toLowerCase();
+    for (var x=0; x < andList.length; x++) {
+      if (sentence.indexOf(andList[x]) == -1) { return false; }
+    }
+    for (var x=0; x < orList.length; x++) {
+      if (sentence.indexOf(orList[x]) > -1) {
+        return true;
+      }
+    }
+  return false;
 }
 //-------------------------------------------------------------------------------------------------
 function createMarkovGenerator(texts) {
@@ -41,8 +59,45 @@ function createMarkovGenerator(texts) {
     return generator;
 }
 //-------------------------------------------------------------------------------------------------
+function displaySentence(sentence) {
+  var senArray = sentence.split(" ");
+  var interval = Math.floor(senArray.length / 3);
+  var part1 = "<p id='p1'>" + senArray.slice(0,interval-1).join(" ") + "</p>";
+  var part2 = "<p id='p2'>" + senArray.slice(interval-1, interval*2-1).join(" ") + "</p>";
+  var part3 = "<p id='p3'>" + senArray.slice(interval*2-1, senArray.length).join(" ") + "</p>";
+  $("#sentence").html(part1+part2+part3);
+  $("#p1").contents().stretch({max: 150});
+  $("#p2").contents().stretch({max: 150});
+  $("#p3").contents().stretch({max: 150});
+}
+//-------------------------------------------------------------------------------------------------
+function displayUnderground(generator, andList, orList) {
+  var numSentences = 33;
+  var sentences = [];
+  while(sentences.length < numSentences) {
+    sentences.push(generator.generateSentences(400).filter(function(sentence) {
+      return checkSentence(sentence, andList,orList);
+    }));
+  }
+
+  for (var x=0; x < sentences.length; x++) {
+      var directions = ['moveLeft', 'moveLeft'];
+      var fontSize = Math.floor(Math.random()*(60 - 30) + 30);
+      var fontColor = Math.floor(Math.random()*(100 - 0) + 0);
+      fontSize = 20;
+      var topOffset = 20*x;
+      var theHtml = "<p class='marquee "+ directions[Math.round(Math.random())] +"' style='font-size:"+fontSize +"px; top:"+ topOffset +"px; color: hsl(0,0%,"+ fontColor +"%)'><span>" + sentences[x] + " " + sentences[x] + " " + sentences[x] + "<span></p>";
+      $("#underground").append(theHtml);
+  }
+  console.log('yeah');
+}
+//-------------------------------------------------------------------------------------------------
 function generateGraphData(generator) {
-    var graphData = generator.generateSentencesWithCyto(1);
+   // var graphData = [];
+    //for (var x=0; x < 200; x++) {
+    //  graphData.push(generator.generateSentencesWithCyto(1));
+    //}
+    graphData = generator.generateSentencesWithCyto(1);
     console.log(graphData.sentence);
     console.log(graphData.cytoGraphData);
     return graphData;
@@ -125,7 +180,7 @@ NEW STUFF
                 var temp = graphData.nodes[x].data.id.split("_");
                 if (temp[1] == node.parent.token) {
                     parentId = graphData.nodes[x].data.id;
-                   // edgeLabel = graphData.nodes[x].data.text;
+                    edgeLabel = graphData.nodes[x].data.text;
                     break;
                 }
             }
@@ -142,12 +197,29 @@ NEW STUFF
 }
 //-------------------------------------------------------------------------------------------------
 function growTree() {
-  cy.trigger('tap');
+  cy.fit();
+  var bfs = cy.elements().bfs('.root', function(){}, true);
+
+  var i = 0;
+  var highlightNextEle = function(){
+    if( i < bfs.path.length ){
+      bfs.path[i].addClass('highlighted');
+    
+      i++;
+      setTimeout(highlightNextEle, 250);
+    }
+  };
+
+  // kick off first highlight
+  highlightNextEle();
 }
 //-------------------------------------------------------------------------------------------------
 function initCyto(graphData) {
 
-  //  graphData = {nodes: [{data: {id: "test1"}},{data: {id: "test2"}}], edges: [{data: {source: "test1", target: "test2"}}]}
+  graphData.edges = graphData.edges.filter(function(item) {
+      return typeof item.data.source !== "undefined" && typeof item.data.target !== "undefined";
+  });
+
     cy = cytoscape({
           container: document.getElementById('tree'),
           
@@ -157,42 +229,49 @@ function initCyto(graphData) {
           style: cytoscape.stylesheet()
             .selector('node')
               .css({
-                'height': 40,
-                'width': 40,
+                'height': 20,
+                'width': 20,
                 'background-fit': 'cover',
-                'background-color': '#4b3203',
+                'background-color': 'hsl(117, 86%, 31%)',
                // 'border-color': '#614103',
                // 'border-width': 3,
                 'shape': 'roundrectangle',
                 //'border-opacity': 0.5,
-                'label': 'data(text)',
-                //'text-rotation': '180deg',
-                //'text-margin-y': '-20px'
-              })
-            .selector('.eating')
-              .css({
-                'border-color': 'red'
-              })
-            .selector('.eater')
-              .css({
-                'border-width': 9
+                //'label': 'data(text)',
+                'text-rotation': '180deg',
+                'text-margin-y': '-20px',
+                'opacity': 1
               })
             .selector('edge')
               .css({
                 'width': 15,
                 //'target-arrow-shape': 'square',
-                'line-color': '#614103',
+                'line-color': 'hsl(117, 86%, 61%)',
                 //'target-arrow-color': '#614103',
                 'curve-style': 'bezier',
                 'label': 'data(text)',
-                'text-rotation' : 'autorotate'
+                'font-size': 35,
+                'text-rotation' : 'autorotate',
+                'opacity': 0.8
               })
             .selector('node.root')
                 .css({
-                    'label': 'data(text)',
+                   // 'label': 'data(text)',
                     'text-rotation': '180deg',
                     'text-margin-y': '-20px'
-                }),
+                })
+            .selector('.highlighted')
+              .css({
+                /*
+                'background-color': '#61bffc',
+                'line-color': '#61bffc',
+                'target-arrow-color': '#61bffc',
+                */
+                'opacity': 1,
+                'transition-property': 'opacity',
+                //'transition-property': 'background-color, line-color, target-arrow-color',
+                'transition-duration': '0.5s'
+              }),
 
           
           elements: graphData,
@@ -200,102 +279,12 @@ function initCyto(graphData) {
           layout: {
             name: 'breadthfirst',
             directed: true,
-            padding: 10
+            padding: 10,
+            roots: '.root'
           }
         }); // cy init
 
-        cy.ready(function(){
-
-            var nodes = cy.nodes(".root");
-            var tapped = nodes;
-            var food = [];
-            
-            nodes.addClass('eater');
-            
-            for(;;){
-              var connectedEdges = nodes.connectedEdges(function(){
-                return !this.target().anySame( nodes );
-              });
-              
-              var connectedNodes = connectedEdges.targets();
-              
-              Array.prototype.push.apply( food, connectedNodes );
-              
-              nodes = connectedNodes;
-              
-              if( nodes.empty() ){ break; }
-            }
-                  
-            var delay = 0;
-            var duration = 100;
-            for( var i = food.length - 1; i >= 0; i-- ){ (function(){
-              var thisFood = food[i];
-              var eater = thisFood.connectedEdges(function(){
-                return this.target().same(thisFood);
-              }).source();
-                      
-              if (typeof thisFood.moveHistory == "undefined") { thisFood.moveHistory = []; }
-              thisFood.moveHistory.push(thisFood.position());
-              thisFood.delay( delay, function(){
-                eater.addClass('eating');
-              } ).animate({
-                position: eater.position(),
-                css: {
-                  'width': 1,
-                  'height': 1,
-                  'border-width': 0,
-                  'opacity': 0
-                }
-              }, {
-                duration: duration,
-                complete: function(){
-                  thisFood.remove();
-                }
-              });
-              
-              delay += duration;
-            })(); } // for
-            
-            for( var i = food.length - 1; i >= 0; i-- ){ (function(){
-              var thisFood = food[i];
-              thisFood.restore();
-              var vomiter = thisFood.connectedEdges(function(){
-                return this.target().same(thisFood);
-              }).target();
-                      
-              thisFood.delay( delay, function(){
-                vomiter.addClass('eating');
-              } ).animate({
-                position: vomiter.moveHistory[0],
-                css: {
-                  'width': 40,
-                  'height': 40,
-                  'border-width': 0,
-                  'opacity': 1
-                }
-              }, {
-                duration: duration,
-                complete: function(){
-                  //thisFood.remove();
-                }
-              });
-              
-              delay += duration;
-            })(); } // for
-
-
-
-
-
-/*
-            var rootId = cy.nodes()[0].id();
-            var moveList = cy.nodes().filter(function(n) {
-              return n !== 0 && cy.nodes()[n].moveHistory.length == 1;
-            });
-            */
-            console.log("ay!");
-              //now recursively animate
-          }); // on tap
+        
 }
 //-------------------------------------------------------------------------------------------------
 

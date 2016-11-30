@@ -1,5 +1,93 @@
+html { height:100%; }
+body {
+	height:100%;
+	background: #54adff; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(#a7d3fc, #54adff); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#a7d3fc, #54adff); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#a7d3fc, #54adff); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#a7d3fc, #54adff); /* Standard syntax */
+    font-family: Arial;
+}
+
 #tree {
 	height:800px;
 	width:100%;
-	/*transform: rotate(180deg);*/
+	transform: rotate(180deg);
+	background: transparent;
+	position:absolute;
+	top:100px;
+}
+
+#ground {
+	background: #a68037; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(#a68037, #38290d); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#a68037, #38290d); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#a68037, #38290d); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#a68037, #38290d); /* Standard syntax */
+    height:40%;
+    width:100%;
+    position:absolute;
+    top:500px;
+    left:0px;
+    z-index:-1;
+}
+
+#underground {
+	height:40%;
+	width:100%;
+	position:absolute;
+	bottom:0px;
+	left:0px;
+	background: #000; /* For browsers that do not support gradients */
+    background: -webkit-linear-gradient(#2d210b, #000); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(#2d210b, #000); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(#2d210b, #000); /* For Firefox 3.6 to 15 */
+    background: linear-gradient(#2d210b, #000); /* Standard syntax */
+}
+
+#sentence {
+	width:100%;
+	height:200px;
+}
+
+#sentence p {
+	text-align:center;
+	opacity:0.25;
+	text-transform: uppercase;
+	margin:0px;
+	padding:0px;
+}
+
+.marquee {
+	position:absolute;
+	left:0px;
+    width: 100%;
+    margin: 0 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+    text-transform:uppercase;
+}
+
+.marquee.moveLeft span {
+    display: inline-block;
+    padding-left: 100%;
+    text-indent: 0;
+    animation: marqueeLeft 420s linear infinite;
+}
+.marquee.moveRight span {
+    display: inline-block;
+    padding-right: 100%;
+    text-indent: 0;
+    animation: marqueeRight 420s linear infinite;
+}
+
+/* Make it move */
+@keyframes marqueeLeft {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(-100%, 0); }
+}
+@keyframes marqueeRight {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(100%, 0); }
 }
