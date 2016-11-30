@@ -1,0 +1,20 @@
+
+First wanted to get a corpus together
+	-did search but didn't turn up much
+	-loosened up search terms
+	-started getting results that sounded inspirational...
+	-made me think of the #blessed hashtag and Twitter, so searched Twitter
+	-jackpot
+
+Tried to do Keras / Tensorflow, but couldn't get it working with the el Capitan dynamic file paths...after a couple of hours of research decided not to try
+
+Wanted to see what I could do with it, so tried Markov javascript thing
+Seemed like a lot of work...looked around found / remembered Rita.js
+Got it working
+Needed more material though
+Seems like an inspirational thing of "dollar and a dream" is what a lot of people living the precariat lifestyle tell themselves as comfort
+Took an excerpt from the intro to The Precariat: the New Dangerous Class( https://www.hse.ru/data/2013/01/28/1304836059/Standing.%20The_Precariat__The_New_Dangerous_Class__-Bloomsbury_USA(2011).pdf)
+
+seemed ok, but thought I might try enforcing PoS structure
+made the text entry part
+this made me think of trees (because of the backtracking etc)
