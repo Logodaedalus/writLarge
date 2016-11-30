@@ -3,6 +3,7 @@
   // First argument is N-gram length, second argument is max length of generated text
   //generator = new RiMarkov(3, true, false);
   //generator.loadFrom('scripts/data/tweets.txt');
+  var cy;
   generateTree();
 //-------------------------------------------------------------------------------------------------
 function generateTree() {
@@ -22,7 +23,8 @@ function generateTree() {
             var sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
             var graphData = formatMarkovData(sentenceData.cytoGraphData);
             initCyto(graphData);        //pass data to initCyto()
-            $("#sentence").html("<p>" + sentenceData.sentence + "</p>");     
+            $("#sentence").html("<p>" + sentenceData.sentence + "</p>");
+            growTree();   
              //TODO: animate the tree / sentence
                 //on callback when finished, wait some period of time
                 //create oldTree div / destroy oldest oldTree div if performance bad
@@ -47,6 +49,10 @@ function generateGraphData(generator) {
 }
 //-------------------------------------------------------------------------------------------------
 function formatMarkovData(markovData) {
+
+  var idStepper = 0;
+
+
     var addNode = function(id, text, nodeClass) {
         graphData.nodes.push({
             group: "nodes",
@@ -69,29 +75,41 @@ function formatMarkovData(markovData) {
             }
         };
         graphData.edges.push(edgeObj);
-    }
-    //function recurse
-    //add node
-    //if there are children
-        //add children
-        //add links to children
-        //for each child,
-            //recurse
+    };
+/*
+NEW STUFF
+    var genId = function(theNode) {
+      //idStepper++;
+      var theIds = "_";
+      for (var aChild in theNode.children) {
+        theIds += aChild.replace(/([^a-z0-9]+)/gi, '-');    //get rid of illegal characters
+      }
+      return theNode.token + theIds;
+    };
 
     var recurse = function(theParent){
         
         for (var theChild in theParent.children) {
-            var id = idStepper + "_" + theChild.token;
-            addNode(id, node.token);            //add node to graph
+            var childIds = "";
+            var id = genId(theParent.children[theChild]);
+            addNode(id, theChild);            //add node to graph
+            addEdge(genId(theParent), id);
+            for (var recurseChild in theParent.children[theChild].children) {
+              recurse(theParent.children[theChild].children[recurseChild]);
+            }
         }
     }
 
-    //recurse(markovData);
+    var graphData = {nodes: [], edges: [] };
+    addNode(genId(markovData), markovData.token);       //add root note
+    recurse(markovData);          //recurse and add all children
+    console.log(markovData);
+*/
+
 
     var stack = [], node, ii;
     stack.push(markovData);
     var graphData = {nodes: [], edges: [] };
-    var idStepper = 0;
 
     while (stack.length > 0) {
         node = stack.pop();
@@ -123,10 +141,14 @@ function formatMarkovData(markovData) {
     return graphData;
 }
 //-------------------------------------------------------------------------------------------------
+function growTree() {
+  cy.trigger('tap');
+}
+//-------------------------------------------------------------------------------------------------
 function initCyto(graphData) {
 
   //  graphData = {nodes: [{data: {id: "test1"}},{data: {id: "test2"}}], edges: [{data: {source: "test1", target: "test2"}}]}
-    var cy = cytoscape({
+    cy = cytoscape({
           container: document.getElementById('tree'),
           
           boxSelectionEnabled: false,
@@ -135,8 +157,8 @@ function initCyto(graphData) {
           style: cytoscape.stylesheet()
             .selector('node')
               .css({
-                'height': 4,
-                'width': 4,
+                'height': 40,
+                'width': 40,
                 'background-fit': 'cover',
                 'background-color': '#4b3203',
                // 'border-color': '#614103',
@@ -158,9 +180,9 @@ function initCyto(graphData) {
             .selector('edge')
               .css({
                 'width': 15,
-                'target-arrow-shape': 'square',
+                //'target-arrow-shape': 'square',
                 'line-color': '#614103',
-                'target-arrow-color': '#614103',
+                //'target-arrow-color': '#614103',
                 'curve-style': 'bezier',
                 'label': 'data(text)',
                 'text-rotation' : 'autorotate'
@@ -181,6 +203,99 @@ function initCyto(graphData) {
             padding: 10
           }
         }); // cy init
+
+        cy.ready(function(){
+
+            var nodes = cy.nodes(".root");
+            var tapped = nodes;
+            var food = [];
+            
+            nodes.addClass('eater');
+            
+            for(;;){
+              var connectedEdges = nodes.connectedEdges(function(){
+                return !this.target().anySame( nodes );
+              });
+              
+              var connectedNodes = connectedEdges.targets();
+              
+              Array.prototype.push.apply( food, connectedNodes );
+              
+              nodes = connectedNodes;
+              
+              if( nodes.empty() ){ break; }
+            }
+                  
+            var delay = 0;
+            var duration = 100;
+            for( var i = food.length - 1; i >= 0; i-- ){ (function(){
+              var thisFood = food[i];
+              var eater = thisFood.connectedEdges(function(){
+                return this.target().same(thisFood);
+              }).source();
+                      
+              if (typeof thisFood.moveHistory == "undefined") { thisFood.moveHistory = []; }
+              thisFood.moveHistory.push(thisFood.position());
+              thisFood.delay( delay, function(){
+                eater.addClass('eating');
+              } ).animate({
+                position: eater.position(),
+                css: {
+                  'width': 1,
+                  'height': 1,
+                  'border-width': 0,
+                  'opacity': 0
+                }
+              }, {
+                duration: duration,
+                complete: function(){
+                  thisFood.remove();
+                }
+              });
+              
+              delay += duration;
+            })(); } // for
+            
+            for( var i = food.length - 1; i >= 0; i-- ){ (function(){
+              var thisFood = food[i];
+              thisFood.restore();
+              var vomiter = thisFood.connectedEdges(function(){
+                return this.target().same(thisFood);
+              }).target();
+                      
+              thisFood.delay( delay, function(){
+                vomiter.addClass('eating');
+              } ).animate({
+                position: vomiter.moveHistory[0],
+                css: {
+                  'width': 40,
+                  'height': 40,
+                  'border-width': 0,
+                  'opacity': 1
+                }
+              }, {
+                duration: duration,
+                complete: function(){
+                  //thisFood.remove();
+                }
+              });
+              
+              delay += duration;
+            })(); } // for
+
+
+
+
+
+/*
+            var rootId = cy.nodes()[0].id();
+            var moveList = cy.nodes().filter(function(n) {
+              return n !== 0 && cy.nodes()[n].moveHistory.length == 1;
+            });
+            */
+            console.log("ay!");
+              //now recursively animate
+          }); // on tap
 }
 //-------------------------------------------------------------------------------------------------
 
