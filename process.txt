@@ -1,7 +1,7 @@
 
 First wanted to get a corpus together
-	-did search but didn't turn up much
-	-loosened up search terms
+	-did search but didn't turn up much in google books, wikipedia, news, etc
+	-loosened up search terms (not just with only a ____ and a dream but "with just a ____ and a dream" or even "_____ and a dream" in some cases)
 	-started getting results that sounded inspirational...
 	-made me think of the #blessed hashtag and Twitter, so searched Twitter
 	-jackpot
@@ -15,6 +15,25 @@ Needed more material though
 Seems like an inspirational thing of "dollar and a dream" is what a lot of people living the precariat lifestyle tell themselves as comfort
 Took an excerpt from the intro to The Precariat: the New Dangerous Class( https://www.hse.ru/data/2013/01/28/1304836059/Standing.%20The_Precariat__The_New_Dangerous_Class__-Bloomsbury_USA(2011).pdf)
 
+Thinking of dreams...so I added another corpus taken from the first part of a dream dictionary...always mix 50% with the Tweets
+
+Thinking of objects, with only a _______ and a dream...so I found a place where people write fiction about special objects, and mined that
+
 seemed ok, but thought I might try enforcing PoS structure
 made the text entry part
 this made me think of trees (because of the backtracking etc)
+
+text entry thing turned out to be a dead end (I think you need a larger corpus to make it work maybe?)
+
+started making tree thing...most straightforward way seemed to messily hack the rita.js library to export a cytoscape graph object, and pipe that through
+
+d3 would have been prettier, but looked at that for half an hour before deciding I'd forgotten almost everything I knew about it
+
+my trees looked pretty sticky...kinda like dead bushes
+
+started thinking of the desert, how with just a ____ and a dream sounds like someone hard on their luck in a western
+
+also makes me think of desolation, especially with the precariat thing, and also Markov chains are this sort of mirage in natural language generation...they always just kinda seem like they could get you a bit further with just a little bit more work
+
+but no
+

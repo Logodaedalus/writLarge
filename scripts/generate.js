@@ -3,10 +3,20 @@
   // First argument is N-gram length, second argument is max length of generated text
   //generator = new RiMarkov(3, true, false);
   //generator.loadFrom('scripts/data/tweets.txt');
-  var cy;
+  var cy0, cy1, cy2, cy3, cy4;
+  var initialized = -1;
+  var numTrees = 5;
+
+  var backgrounds = ["day", "sunset", "night"];
+
+  var theChoice = backgrounds[Math.floor(Math.random() * (backgrounds.length - 0) + 0)];
+  $("body").addClass(theChoice);
+  $("#sun").addClass(theChoice);
+  $("#overSun").addClass(theChoice);
+
   $("#outro").fadeOut("slow", function() {
     generate();
-    //window.setTimeout(outro, 45000);
+    window.setTimeout(outro, 75000);
   });
   
 //-------------------------------------------------------------------------------------------------
@@ -42,13 +52,39 @@ function generate() {
               sentenceCorrect = true;
             }
             var graphData = formatMarkovData(sentenceData.cytoGraphData);
-            initCyto(graphData);        //pass data to initCyto()
+            cy0 = initCyto(graphData, "0");        //pass data to initCyto()
             displaySentence(sentenceData.sentence[0]);
             if (generateUnderground) {
               displayUnderground(generator, additiveCorpora[randomIndex].andList, additiveCorpora[randomIndex].orList);
             }
-            growTree();   
-
+            growTree(cy0, function() {
+              sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+              graphData = formatMarkovData(sentenceData.cytoGraphData);
+              cy1 = initCyto(graphData, "1");        //pass data to initCyto()
+              displaySentence(sentenceData.sentence[0]);
+              growTree(cy1, function() {
+                sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+                graphData = formatMarkovData(sentenceData.cytoGraphData);
+                cy2 = initCyto(graphData, "2");        //pass data to initCyto()
+                displaySentence(sentenceData.sentence[0]);
+                growTree(cy2, function() {
+                  sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+                  graphData = formatMarkovData(sentenceData.cytoGraphData);
+                  cy3 = initCyto(graphData, "3");        //pass data to initCyto()
+                  displaySentence(sentenceData.sentence[0]);
+                  growTree(cy3, function() {
+                    sentenceData = generateGraphData(generator);                   //generate node / edge graph from data
+                    graphData = formatMarkovData(sentenceData.cytoGraphData);
+                    cy4 = initCyto(graphData, "4");        //pass data to initCyto()
+                    displaySentence(sentenceData.sentence[0]);
+                    growTree(cy4);
+                  });  
+                });  
+              });  
+            });   
+            
+            
+            
             
         });
     });
@@ -236,15 +272,15 @@ function formatMarkovData(markovData) {
     return graphData;
 }
 //-------------------------------------------------------------------------------------------------
-function growTree() {
-  trimTree();         //cut out egregious nodes
-  cy.layout({
+function growTree(theCy, theCallback) {
+  trimTree(theCy);         //cut out egregious nodes
+  theCy.layout({
     name: 'dagre',
     nodeSep: 20,
     rankSep: 100
   });
-  cy.fit(cy.nodes());
-  var bfs = cy.elements().bfs('.root', function(){}, true);
+  theCy.fit(theCy.nodes());
+  var bfs = theCy.elements().bfs('.root', function(){}, true);
 
   var i = 0;
   var highlightNextEle = function(){
@@ -254,31 +290,34 @@ function growTree() {
       i++;
       setTimeout(highlightNextEle, 250);
     }
+    if (i == bfs.path.length && initialized < 4) {       //we must be done!
+      theCallback();
+    }
   };
 
   // kick off first highlight
   highlightNextEle();
 }
 //-------------------------------------------------------------------------------------------------
-function trimTree() {
+function trimTree(theCy) {
 
   var outdegreeForTrim = 10;
   var trimmed = false;
 
-  for (var x=0; x < cy.nodes().length; x++) {
-    if (cy.nodes()[x].outdegree() > outdegreeForTrim) {
+  for (var x=0; x < theCy.nodes().length; x++) {
+    if (theCy.nodes()[x].outdegree() > outdegreeForTrim) {
       trimmed = true;
-      var trimAmount = cy.nodes()[x].outdegree() - outdegreeForTrim;
+      var trimAmount = theCy.nodes()[x].outdegree() - outdegreeForTrim;
       var trimStart = true;
       for (var y=0; y < trimAmount; y++) {
         if (trimStart) {
-          if (typeof cy.nodes()[x].outgoers().nodes()[0 + y] == "undefined") { break; }
-            cy.nodes()[x].outgoers().nodes()[0 + y].remove();
+          if (typeof theCy.nodes()[x].outgoers().nodes()[0 + y] == "undefined") { break; }
+            theCy.nodes()[x].outgoers().nodes()[0 + y].remove();
           trimStart = false;  
         }
         else {
-          if (typeof cy.nodes()[x].outgoers().nodes()[cy.nodes()[x].outgoers().nodes().length - y] == "undefined") { break; }
-          cy.nodes()[x].outgoers().nodes()[cy.nodes()[x].outgoers().nodes().length - y].remove();
+          if (typeof theCy.nodes()[x].outgoers().nodes()[theCy.nodes()[x].outgoers().nodes().length - y] == "undefined") { break; }
+          theCy.nodes()[x].outgoers().nodes()[theCy.nodes()[x].outgoers().nodes().length - y].remove();
           trimStart = true;
         }
         
@@ -286,18 +325,19 @@ function trimTree() {
       break;
     }
   }
-  if (trimmed) { trimTree(); }
+  if (trimmed) { trimTree(theCy); }
 }
 //-------------------------------------------------------------------------------------------------
-function initCyto(graphData) {
+function initCyto(graphData, containerStep) {
 
+  if (typeof containerStep == "undefined") { containerStep = 0; }
 /*
   graphData.edges = graphData.edges.filter(function(item) {
       return typeof item.data.source !== "undefined" && typeof item.data.target !== "undefined";
   });
 */
-    cy = cytoscape({
-          container: document.getElementById('tree'),
+    theCy = cytoscape({
+          container: document.getElementById('tree' + containerStep),
           
           boxSelectionEnabled: false,
           autounselectify: true,
@@ -367,6 +407,8 @@ function initCyto(graphData) {
           }
         }); // cy init
 
+      initialized++;
+      return theCy;
         
 }
 //-------------------------------------------------------------------------------------------------
