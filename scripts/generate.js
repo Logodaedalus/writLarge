@@ -4,17 +4,31 @@
   //generator = new RiMarkov(3, true, false);
   //generator.loadFrom('scripts/data/tweets.txt');
   var cy;
-  generate();
+  $("#outro").fadeOut("slow", function() {
+    generate();
+    window.setTimeout(outro, 45000);
+  });
+  
+//-------------------------------------------------------------------------------------------------
+function outro() {
+  $("#outro").fadeIn("slow", function() {
+    location.reload();
+  });
+}
 //-------------------------------------------------------------------------------------------------
 function generate() {
 
+    var generateUnderground = true;
+
     var baseCorpus = ["scripts/data/tweets.txt"];
     var additiveCorpora = [
-    {file: "scripts/data/precariat.txt", andList: ["and a dream"], orList: ["precariat", "labour", "income", "class"]}
+    {file: "scripts/data/precariat.txt", andList: ["and a dream"], orList: ["precariat", "labour", "income", "class"]},
+    {file: "scripts/data/dream.txt", andList: ["and a dream"], orList: []},
+    {file: "scripts/data/objects.txt", andList: ["and a dream"], orList: []}
     ];
     var texts = "";
     var randomIndex = Math.floor(Math.random() * (additiveCorpora.length - 0) + 0);
-
+    console.log("FILE: ",additiveCorpora[randomIndex].file);
     $.get(baseCorpus, function(response) {
         texts += response;
         $.get(additiveCorpora[randomIndex].file, function(response2) {
@@ -30,8 +44,11 @@ function generate() {
             var graphData = formatMarkovData(sentenceData.cytoGraphData);
             initCyto(graphData);        //pass data to initCyto()
             displaySentence(sentenceData.sentence[0]);
-            displayUnderground(generator, additiveCorpora[randomIndex].andList, additiveCorpora[randomIndex].orList);
+            if (generateUnderground) {
+              displayUnderground(generator, additiveCorpora[randomIndex].andList, additiveCorpora[randomIndex].orList);
+            }
             growTree();   
+
             
         });
     });
@@ -39,7 +56,6 @@ function generate() {
 }
 //-------------------------------------------------------------------------------------------------
 function checkSentence(sentenceData, andList, orList) {
-  //return sentence.indexOf("and a dream") > -1 && (sentence.indexOf("precariat") > -1 || sentence.indexOf("labour") > -1 || sentence.indexOf("income") > -1 || sentence.indexOf("class") > -1)
     var correct = true;
     var sentence = sentenceData.toLowerCase();
     for (var x=0; x < andList.length; x++) {
@@ -50,7 +66,8 @@ function checkSentence(sentenceData, andList, orList) {
         return true;
       }
     }
-  return false;
+    if (orList.length == 0) { return true;}
+    return false;
 }
 //-------------------------------------------------------------------------------------------------
 function createMarkovGenerator(texts) {
@@ -75,10 +92,22 @@ function displayUnderground(generator, andList, orList) {
   var numSentences = 33;
   var sentences = [];
   while(sentences.length < numSentences) {
-    sentences.push(generator.generateSentences(400).filter(function(sentence) {
-      return checkSentence(sentence, andList,orList);
-    }));
+    var newSentences = generator.generateSentences(400);
+    newSentences = newSentences.filter(function(sentence) {
+      return checkSentence(sentence, andList, orList);
+    });
+    sentences = sentences.concat(newSentences);
   }
+
+  for (var x = 0; x < sentences.length; x++) {
+    sentences[x] += " " + generator.generateSentences(1);
+  }
+
+  sentences.forEach(function(sentence) {
+    sentence = sentence.replace(/../g, ". ");
+    sentence = sentence.replace(/.\,/g, ". ");
+    sentence = sentence.replace(/\,./g, ", ");
+  })
 
   for (var x=0; x < sentences.length; x++) {
       var directions = ['moveLeft', 'moveLeft'];
@@ -216,10 +245,11 @@ function growTree() {
 //-------------------------------------------------------------------------------------------------
 function initCyto(graphData) {
 
+/*
   graphData.edges = graphData.edges.filter(function(item) {
       return typeof item.data.source !== "undefined" && typeof item.data.target !== "undefined";
   });
-
+*/
     cy = cytoscape({
           container: document.getElementById('tree'),
           
@@ -240,7 +270,7 @@ function initCyto(graphData) {
                 //'label': 'data(text)',
                 'text-rotation': '180deg',
                 'text-margin-y': '-20px',
-                'opacity': 1
+                'opacity': 0
               })
             .selector('edge')
               .css({
@@ -252,7 +282,7 @@ function initCyto(graphData) {
                 'label': 'data(text)',
                 'font-size': 35,
                 'text-rotation' : 'autorotate',
-                'opacity': 0.8
+                'opacity': 0
               })
             .selector('node.root')
                 .css({

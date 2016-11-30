@@ -9,6 +9,15 @@ body {
     font-family: Arial;
 }
 
+#outro {
+	position:absolute;
+	top:0px;
+	left:0px;
+	width:100%;
+	height:100%;
+	background-color:black;
+}
+
 #tree {
 	height:800px;
 	width:100%;
@@ -73,13 +82,13 @@ body {
     display: inline-block;
     padding-left: 100%;
     text-indent: 0;
-    animation: marqueeLeft 420s linear infinite;
+    animation: marqueeLeft 120s linear infinite;
 }
 .marquee.moveRight span {
     display: inline-block;
     padding-right: 100%;
     text-indent: 0;
-    animation: marqueeRight 420s linear infinite;
+    animation: marqueeRight 120s linear infinite;
 }
 
 /* Make it move */
