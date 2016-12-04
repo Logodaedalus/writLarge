@@ -6,6 +6,8 @@
   var cy0, cy1, cy2, cy3, cy4;
   var initialized = -1;
   var numTrees = 5;
+  var sanityCheckNode = 100000;
+  var sanityCheckEdge = 100000;
 
   var backgrounds = ["day", "sunset", "night"];
 
@@ -118,10 +120,12 @@ function displaySentence(sentence) {
   var part1 = "<p id='p1'>" + senArray.slice(0,interval-1).join(" ") + "</p>";
   var part2 = "<p id='p2'>" + senArray.slice(interval-1, interval*2-1).join(" ") + "</p>";
   var part3 = "<p id='p3'>" + senArray.slice(interval*2-1, senArray.length).join(" ") + "</p>";
+  $("#sentence").fadeOut("fast");
   $("#sentence").html(part1+part2+part3);
   $("#p1").contents().stretch({max: 150});
   $("#p2").contents().stretch({max: 150});
   $("#p3").contents().stretch({max: 150});
+  $("#sentence").fadeIn("slow");
 }
 //-------------------------------------------------------------------------------------------------
 function displayUnderground(generator, andList, orList) {
@@ -174,6 +178,9 @@ function formatMarkovData(markovData) {
 
 
     var addNode = function(id, text, nodeClass) {
+      sanityCheckNode--;
+      if (sanityCheckNode == 0) { location.reload(); }
+
       console.log("added node with id: ", id);
         graphData.nodes.push({
             group: "nodes",
@@ -186,6 +193,8 @@ function formatMarkovData(markovData) {
     };
 
     var addEdge = function(source, target, text) {
+      sanityCheckNode--;
+      if (sanityCheckNode == 0) { location.reload(); }
 
         var edgeObj = {
             group: "edges",

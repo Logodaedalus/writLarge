@@ -43,7 +43,9 @@ function err() {
   var msg = "[RiTa] " + arguments[0];
   for (var i = 1; i < arguments.length; i++)
     msg += '\n' + arguments[i];
+  location.reload();      //JG just reload the page if it errors out, so we can keep going
   throw Error(msg);
+  
 }
 
 function warn() {
